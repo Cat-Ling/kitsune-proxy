@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy go.mod and regenerate go.sum
 COPY go.mod ./
-RUN go mod tidy  # This will generate go.sum
+RUN go mod tidy
 
 # Copy the rest of the source code
 COPY . .
