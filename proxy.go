@@ -9,12 +9,21 @@ import (
 // Base API URL
 const baseAPI = "https://api.kitsunee.me"
 
-// ProxyHandler forwards all requests dynamically and fixes CORS
+// ProxyHandler forwards requests and fixes CORS
 func proxyHandler(w http.ResponseWriter, r *http.Request) {
-	// Construct the full API URL
+	// ✅ Handle CORS preflight requests
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Construct full API URL
 	targetURL := baseAPI + r.URL.Path
 
-	// Forward the request to the target API
+	// Forward request
 	resp, err := http.Get(targetURL)
 	if err != nil {
 		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
@@ -23,27 +32,25 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// ✅ Manually add CORS headers so browsers accept the response
-	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-	// Copy response headers from Kitsune (if needed)
+	// Copy response headers
 	for key, values := range resp.Header {
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
 	}
 
-	// Write response status code
+	// Write response status
 	w.WriteHeader(resp.StatusCode)
 
-	// Stream the response body to the client
+	// Stream response body
 	io.Copy(w, resp.Body)
 }
 
 func main() {
-	// Handle all requests through the proxy
 	http.HandleFunc("/", proxyHandler)
 
 	fmt.Println("Proxy server running on http://localhost:54878")
