@@ -1,17 +1,20 @@
-## Dockerfile
-FROM golang:1.21 as builder
+# Build stage
+FROM golang:1.21 AS builder
 WORKDIR /app
 
-# Copy source files
+# Copy go.mod and regenerate go.sum
 COPY go.mod ./
-RUN go mod download
+RUN go mod tidy  # This will generate go.sum
+
+# Copy the rest of the source code
 COPY . .
 
 # Build the binary with static linking
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /proxy proxy.go
 
-# Create minimal scratch image
+# Minimal runtime image
 FROM scratch
+WORKDIR /
 COPY --from=builder /proxy /proxy
 
 # Expose the port
