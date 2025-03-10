@@ -12,11 +12,12 @@ COPY . .
 # Build the binary with static linking
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /proxy proxy.go
 
-# Minimal runtime image
-FROM scratch
+# Use Google Distroless (with CA store)
+FROM gcr.io/distroless/static:nonroot 
 WORKDIR /
 COPY --from=builder /proxy /proxy
 
 # Expose the port
 EXPOSE 54878
+USER nonroot 
 CMD ["/proxy"]
